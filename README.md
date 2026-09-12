@@ -2,11 +2,18 @@
 
 An experimental Android app that **recreates the iPhone Duo opening and closing animation on Galaxy Z Fold devices**. It follows the hinge angle of the Galaxy Z Fold7 and Fold8 and overlays an iPhone Duo-inspired 3D folding effect across the entire screen.
 
+**This is not a staged animation inside a demo app or a static-screenshot mockup.** ZFoldDuo runs as a system-wide overlay across Android and other apps, responds continuously to the physical hinge, and coordinates the real inner and cover displays. Live screen content remains part of the rendered transition.
+
 > [!IMPORTANT]
 > ZFoldDuo is a proof of concept exploring whether the iPhone Duo animation can be recreated on Galaxy Z Fold devices. It is not currently stable or ready for everyday use. More device testing and development are needed before it can become a reliable app. Bug reports, results from different OS builds, UI and architecture ideas, and code contributions are all welcome. Join the [Discord server](https://discord.gg/3ZgZKwJhKz) to participate and exchange information. See [CONTRIBUTING.md](CONTRIBUTING.md) for development guidelines.
 
+## Demo
+
+![ZFoldDuo running as a system-wide fold animation on a Galaxy Z Fold](docs/assets/zfoldduo-demo.gif)
+
 ## Features
 
+- System-wide operation across the Android UI and other apps
 - Continuous animation driven by Samsung's internal hinge angle
 - Display transitions spanning the inner and cover screens
 - Live frames that reflect changes in the content behind the overlay
@@ -38,11 +45,11 @@ The pairing key is stored in the app's private storage. A PC connection is not r
 
 ## How it works
 
-ZFoldDuo reads the internal hinge angle used by Samsung's system wallpaper component through an on-device ADB session. During a display transition, it tracks Android's logical displays and the physical panels separately, temporarily keeping only the required displays powered at the same time.
+ZFoldDuo reads the internal hinge angle used by Samsung's system wallpaper component through an on-device ADB session. Its accessibility overlay is attached at the system level rather than to one app activity, so the effect follows whatever is currently visible on the device. During a display transition, it tracks Android's logical displays and the physical panels separately, temporarily keeping only the required displays powered at the same time.
 
 The rendering engine treats each captured frame as a virtual glass surface. It calculates the projected position from the distance to the hinge, distance to the viewer, and rotation of the surface, then uses AGSL to apply depth-dependent frosting and dimming.
 
-The overlay does not receive touch input and is excluded from screen capture. This prevents it from recursively appearing inside its own live frames.
+Screen capture is used only as the live texture source for the system-wide effect; the animation is not a prerecorded or frozen screenshot trick. The frames are refreshed from the active display while the geometry continues to follow the physical hinge. The overlay itself does not receive touch input and is excluded from capture, preventing it from recursively appearing inside its own live frames.
 
 ## Privacy
 
