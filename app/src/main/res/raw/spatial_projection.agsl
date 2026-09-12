@@ -1,0 +1,63 @@
+// Pinhole projection and depth-dependent frost for the moving display plane.
+uniform shader content;
+uniform float2 resolution;
+uniform float tiltDegrees;
+uniform float eyeDistancePx;
+uniform float hingePos;
+uniform float eyeX;
+uniform float axisSwap;
+uniform float paneSide;
+uniform float blurSpread;
+
+const float GOLDEN_ANGLE = 2.39996322972865332;
+const float TWO_PI = 6.28318530717958648;
+
+half4 main(float2 fragCoord) {
+    if (resolution.x <= 1.0 || resolution.y <= 1.0) {
+        return content.eval(fragCoord);
+    }
+    float tilt = radians(clamp(tiltDegrees, 0.0, 89.5));
+    if (tilt < 1e-4) {
+        return content.eval(fragCoord);
+    }
+
+    float2 p = mix(fragCoord, fragCoord.yx, axisSwap);
+    float2 size = mix(resolution, resolution.yx, axisSwap);
+    float side = mix(-1.0, 1.0, step(hingePos, p.x));
+    if (paneSide * side < -0.5) {
+        return content.eval(fragCoord);
+    }
+    float d = abs(p.x - hingePos);
+    float2 glass = float2(hingePos + side * d * cos(tilt), p.y);
+    float gap = d * sin(tilt);
+    float2 eye = float2(eyeX, size.y * 0.5);
+    float depth = eyeDistancePx - gap;
+    if (depth <= 1e-3) {
+        return half4(0.0, 0.0, 0.0, 1.0);
+    }
+    float2 hitS = eye + (glass - eye) * (eyeDistancePx / depth);
+    float radius = blurSpread * gap;
+    if (hitS.x < -radius || hitS.y < -radius ||
+        hitS.x > size.x + radius || hitS.y > size.y + radius) {
+        return half4(0.0, 0.0, 0.0, 1.0);
+    }
+    float2 hit = mix(hitS, hitS.yx, axisSwap);
+    if (radius < 0.5) {
+        return half4(content.eval(hit).rgb, 1.0);
+    }
+
+    float tapsF = clamp(radius * 2.0, 6.0, 32.0);
+    float rotation = fract(sin(dot(fragCoord, float2(12.9898, 78.233))) * 43758.5453) * TWO_PI;
+    half3 sum = half3(0.0);
+    float wsum = 0.0;
+    for (int i = 0; i < 32; i++) {
+        float fi = float(i);
+        float w = 1.0 - step(tapsF, fi);
+        float r = radius * sqrt((fi + 0.5) / tapsF);
+        float a = fi * GOLDEN_ANGLE + rotation;
+        sum += content.eval(hit + r * float2(cos(a), sin(a))).rgb * half(w);
+        wsum += w;
+    }
+    half3 avg = sum / half(max(wsum, 1.0));
+    return half4(avg, 1.0);
+}

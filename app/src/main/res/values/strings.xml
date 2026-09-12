@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">ZFoldDuo</string>
+    <string name="accessibility_name">ZFoldDuo 画面折りたたみ</string>
+    <string name="accessibility_description">実際のヒンジ角度に合わせ、画面全体へ曇りガラスの折りたたみアニメーションを表示します。画面はアニメーション中だけメモリへ取得し、保存や送信はしません。</string>
+</resources>

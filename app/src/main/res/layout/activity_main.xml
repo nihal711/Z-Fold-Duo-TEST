@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:gravity="center"
+    android:orientation="vertical"
+    android:padding="24dp">
+
+    <TextView
+            android:id="@+id/statusText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="接続中"
+            android:textColor="@color/accent"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+
+    <TextView
+            android:id="@+id/angleText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:gravity="center"
+            android:fontFamily="sans-serif-light"
+            android:text="—°"
+            android:textColor="@color/text_primary"
+            android:textSize="72sp"
+            android:textStyle="bold" />
+
+    <TextView
+            android:id="@+id/detailText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:gravity="center"
+            android:text="PRIVATE 65686   —"
+            android:textColor="@color/text_secondary"
+            android:textSize="14sp" />
+
+    <TextView
+            android:id="@+id/rateText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:gravity="center"
+            android:text="— Hz"
+            android:textColor="@color/text_secondary"
+            android:textSize="13sp" />
+
+    <TextView
+        android:id="@+id/overlayStatus"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        android:gravity="center"
+        android:text="画面オーバーレイ OFF"
+        android:textColor="@color/text_primary"
+        android:textSize="15sp"
+        android:textStyle="bold" />
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/accessibilityButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="有効にする" />
+
+        <Button
+            android:id="@+id/demoButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:enabled="false"
+            android:text="テスト" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/setupPanel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:gravity="center"
+        android:orientation="vertical">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:text="初回だけ、ワイヤレスデバッグの「ペア設定コード」を開き、このアプリと同時表示してください"
+            android:textColor="@color/text_secondary"
+            android:textSize="13sp" />
+
+        <TextView
+            android:id="@+id/endpointText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:gravity="center"
+            android:text="ワイヤレスデバッグを待っています"
+            android:textColor="@color/text_secondary"
+            android:textSize="12sp" />
+
+        <EditText
+            android:id="@+id/codeInput"
+            android:layout_width="180dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:digits="0123456789"
+            android:gravity="center"
+            android:hint="6桁コード"
+            android:importantForAutofill="no"
+            android:inputType="number"
+            android:maxLength="6"
+            android:textColor="@color/text_primary"
+            android:textColorHint="@color/text_secondary" />
+
+        <Button
+            android:id="@+id/pairButton"
+            android:layout_width="180dp"
+            android:layout_height="wrap_content"
+            android:text="ペアリング" />
+
+        <Button
+            android:id="@+id/settingsButton"
+            android:layout_width="180dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="開発者設定を開く" />
+    </LinearLayout>
+</LinearLayout>
