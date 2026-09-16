@@ -10,8 +10,15 @@ package com.foldduo.hinge.link
 object PrivateAngleStream {
     const val ANGLE_ACTION = "zfoldduo_angle"
 
+    /**
+     * IWallpaperManager transaction that dispatches a command to the running
+     * wallpaper engine on One UI 8 / early One UI 9. Builds that renumber the
+     * interface are diagnosed with the in-app debug report.
+     */
+    const val PROBE_TRANSACTION = 90
+
     const val PROBE_COMMAND =
-        "while :; do service call wallpaper 90 i32 5 s16 $ANGLE_ACTION >/dev/null; sleep 0.025; done"
+        "while :; do service call wallpaper $PROBE_TRANSACTION i32 5 s16 $ANGLE_ACTION >/dev/null; sleep 0.025; done"
 
     /**
      * FoldInteractive normally unsubscribes from the sensor while the cover panel
@@ -19,14 +26,18 @@ object PrivateAngleStream {
      * display power or topology.
      */
     const val SENSOR_WAKE_COMMAND =
-        "service call wallpaper 90 i32 5 s16 android.wallpaper.wakingup >/dev/null"
+        "service call wallpaper $PROBE_TRANSACTION i32 5 s16 android.wallpaper.wakingup >/dev/null"
 
     const val SENSOR_STOPPED_MARKER = "unregisterSensor: mIsSensorRegistered[true]"
 
+    /**
+     * Any line carrying `mCurrentAngle` is useful, not only the reply to our own
+     * action, and the tag is matched both in Samsung's composite
+     * `SprWallpaper|FoldInteractive` form and on its own.
+     */
     const val LOG_COMMAND =
-        "logcat -v brief -T 1 --regex='(onCommand: action\\[$ANGLE_ACTION\\], mCurrentAngle|" +
-            "unregisterSensor: mIsSensorRegistered\\[true\\])' " +
-            "'SprWallpaper|FoldInteractive':I '*:S'"
+        "logcat -v brief -T 1 --regex='(mCurrentAngle|unregisterSensor: mIsSensorRegistered\\[true\\])' " +
+            "'SprWallpaper|FoldInteractive':I FoldInteractive:I '*:S'"
 
     const val LIVE_CAPTURE_COMMAND =
         "CLASSPATH=${'$'}(pm path com.foldduo.hinge | head -n 1 | cut -d: -f2) " +
@@ -38,7 +49,8 @@ object PrivateAngleStream {
     /** Printed by the capture bridge before it exits on an unrecoverable error. */
     const val LIVE_ERROR_MARKER = "ZFoldDuo live capture error"
 
-    private val ANGLE = Regex("mCurrentAngle\\[([-+]?\\d+(?:\\.\\d+)?)\\]")
+    /** Accepts `mCurrentAngle[12.3]`, `mCurrentAngle=12.3`, `mCurrentAngle: 12.3`, `mCurrentAngle(12.3)`. */
+    private val ANGLE = Regex("mCurrentAngle\\s*[\\[=:(]\\s*([-+]?\\d+(?:\\.\\d+)?)")
 
     /** Hinge angle in degrees clamped to 0..180, or null when the line is not an angle sample. */
     fun parseAngle(line: String): Float? {

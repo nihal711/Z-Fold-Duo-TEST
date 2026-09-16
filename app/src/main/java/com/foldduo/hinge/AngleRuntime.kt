@@ -70,6 +70,16 @@ object AngleRuntime {
     val publicSensorDescription: String
         get() = if (initialized) sensor.description else "unavailable"
 
+    /** True when no sensor finer than 45° is available without the ADB stream. */
+    val publicSensorTooCoarse: Boolean
+        get() = initialized && sensor.isTooCoarse
+
+    fun describeSensors(): String = if (initialized) sensor.describeAll() else "not initialised"
+
+    /** Blocking; for the debug report only. Returns null when the link is down. */
+    fun runShellForDiagnostics(command: String): String? =
+        if (initialized && client.isConnected) client.shell(command).getOrNull() else null
+
     private var initialized = false
     private lateinit var app: Context
     private lateinit var prefs: SharedPreferences
@@ -210,6 +220,7 @@ object AngleRuntime {
     private fun onConnected() {
         PairingNotifier.dismissPrompt(app)
         scope.launch {
+            exemptFromBackgroundFreezing()
             val output = client.shell("cmd device_state print-states").getOrNull().orEmpty()
             val catalog = DeviceStateCatalog.parse(output)
             _deviceStates.value = catalog
@@ -219,6 +230,20 @@ object AngleRuntime {
                 Log.i(TAG, "device states: $catalog; concurrent supported=${catalog.supportsConcurrentDisplays}")
             }
         }
+    }
+
+    /**
+     * One UI freezes cached background processes, bound accessibility services
+     * included, so the overlay silently stops receiving anything while the app
+     * is not on screen. The shell can exempt the package from Doze and from
+     * background restrictions; both commands are idempotent.
+     */
+    private fun exemptFromBackgroundFreezing() {
+        val pkg = app.packageName
+        val whitelist = client.shell("dumpsys deviceidle whitelist +$pkg").getOrNull().orEmpty()
+        val appops = client.shell("cmd appops set $pkg RUN_ANY_IN_BACKGROUND allow").getOrNull().orEmpty()
+        client.shell("am set-standby-bucket $pkg active")
+        Log.i(TAG, "background exemptions: deviceidle='${whitelist.trim().take(80)}' appops='${appops.trim().take(80)}'")
     }
 
     private fun onClientEvent(event: EmbeddedAdbAngleClient.Event) {

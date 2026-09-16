@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.1.1 (2026-09-16)
+
+First feedback from a Galaxy Z Fold8 Ultra (SM-F976B, One UI 9 / Android 17,
+build CP2A.260605.016): the ADB link over loopback holds, device states are
+read correctly, but the private hinge stream and live capture produce nothing,
+and the public hinge sensor on this device is quantised to 90° (Samsung
+reports `resolution 90.0°`), so basic mode only sees 0°, 90° and 180°.
+
+- **Collect debug report** button: gathers, through the ADB link, the build's
+  `IWallpaperManager` transaction table (to find where the wallpaper command
+  moved), existing FoldInteractive log lines, the result of the probe command,
+  hinge-related sensors, device/display state and the app's own logcat, then
+  copies it and opens the share sheet. No PC needed.
+- Vendor hinge sensors: every SensorManager sensor whose name mentions hinge,
+  fold or angle is registered alongside the public one; the finest sensor that
+  actually delivers plausible degrees is used. On builds that expose Samsung's
+  internal angle sensor to apps this replaces the wallpaper-log hack entirely.
+- Clear warning in the UI when only the 90°-step sensor is available.
+- Angle log parsing accepts `mCurrentAngle=` / `:` / `(` variants and the
+  logcat filter also matches a plain `FoldInteractive` tag.
+- One UI freezes cached background processes, bound accessibility services
+  included. On every (re)connect the app now exempts itself through the shell
+  (`dumpsys deviceidle whitelist`, `appops RUN_ANY_IN_BACKGROUND`, active
+  standby bucket) so the overlay keeps receiving angles while off screen.
+
 ## 0.1.0 (2026-09-16)
 
 Focus: make the app usable day to day on the Galaxy Z Fold8 Ultra, where the

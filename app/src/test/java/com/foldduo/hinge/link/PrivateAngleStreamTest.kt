@@ -20,6 +20,13 @@ class PrivateAngleStreamTest {
     }
 
     @Test
+    fun acceptsAlternativeSeparators() {
+        assertEquals(12.5f, PrivateAngleStream.parseAngle("FoldInteractive: onSensorChanged mCurrentAngle=12.5")!!, 0.0001f)
+        assertEquals(97f, PrivateAngleStream.parseAngle("mCurrentAngle: 97")!!, 0.0001f)
+        assertEquals(45.25f, PrivateAngleStream.parseAngle("mCurrentAngle(45.25)")!!, 0.0001f)
+    }
+
+    @Test
     fun nonAngleLinesYieldNull() {
         assertNull(PrivateAngleStream.parseAngle("I/FoldInteractive( 4321): unregisterSensor: mIsSensorRegistered[true]"))
         assertNull(PrivateAngleStream.parseAngle(""))

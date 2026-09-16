@@ -98,6 +98,16 @@
             android:textColor="@color/text_secondary"
             android:textSize="13sp" />
 
+        <TextView
+            android:id="@+id/coarseSensorText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:text="@string/sensor_too_coarse"
+            android:textColor="@color/accent"
+            android:textSize="13sp"
+            android:visibility="gone" />
+
         <LinearLayout
             android:id="@+id/setupPanel"
             android:layout_width="match_parent"
@@ -265,11 +275,26 @@
             android:textColor="@color/text_secondary"
             android:textSize="12sp" />
 
-        <Button
-            android:id="@+id/copyDiagnosticsButton"
-            android:layout_width="wrap_content"
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
-            android:text="@string/button_copy_diagnostics" />
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/copyDiagnosticsButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/button_copy_diagnostics" />
+
+            <Button
+                android:id="@+id/debugReportButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:layout_weight="1"
+                android:text="@string/button_debug_report" />
+        </LinearLayout>
     </LinearLayout>
 </ScrollView>

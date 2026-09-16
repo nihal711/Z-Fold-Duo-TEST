@@ -28,6 +28,11 @@
     <string name="button_test">Test animation</string>
     <string name="button_copy_diagnostics">Copy diagnostics</string>
     <string name="diagnostics_copied">Diagnostics copied</string>
+    <string name="button_debug_report">Collect debug report</string>
+    <string name="debug_report_collecting">Collecting report…</string>
+    <string name="debug_report_ready">Report copied to clipboard; choose where to share it</string>
+    <string name="debug_report_share_title">ZFoldDuo debug report</string>
+    <string name="sensor_too_coarse">This device only reports 0°, 90° and 180° from its public hinge sensor. Smooth animation needs the Samsung internal stream over ADB (full mode). If “Hinge stream” stays on “waiting”, collect a debug report and share it.</string>
 
     <!-- Link status -->
     <string name="status_waiting">Waiting for Wireless debugging…</string>

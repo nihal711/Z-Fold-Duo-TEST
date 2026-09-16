@@ -57,7 +57,8 @@ The pairing key is stored in the app's private storage. A PC is never required. 
 ### If the link keeps dropping
 
 - Open the app and read the **1 · Wireless debugging link** section. It names the missing prerequisite (Developer options, USB debugging, Wireless debugging) and shows whether the hinge stream and live capture are alive.
-- Tap **Copy diagnostics** and include the text, together with `adb logcat -s ZFoldDuoEngine`, in a bug report. The capture bridge's own output is relayed into that log, so a failing screen-capture API on a new One UI build is visible there.
+- Tap **Collect debug report**. It gathers, through the ADB link, the wallpaper service's transaction table, FoldInteractive log lines, hinge-related sensors, device and display state and the app's own log, then copies the text and opens the share sheet. That report is what a bug report needs; no PC is required. **Copy diagnostics** is the short version.
+- If the angle only ever shows 0°, 90° or 180°, the Samsung private stream is not delivering on your build and the app is running on the public hinge sensor, which Samsung quantises to 90° on the Fold8 Ultra. Share a debug report.
 
 ## How it works
 

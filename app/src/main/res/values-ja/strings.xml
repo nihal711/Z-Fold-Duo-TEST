@@ -21,6 +21,11 @@
     <string name="button_test">テスト</string>
     <string name="button_copy_diagnostics">診断情報をコピー</string>
     <string name="diagnostics_copied">診断情報をコピーしました</string>
+    <string name="button_debug_report">デバッグレポートを収集</string>
+    <string name="debug_report_collecting">レポートを収集中…</string>
+    <string name="debug_report_ready">レポートをクリップボードにコピーしました。共有先を選んでください</string>
+    <string name="debug_report_share_title">ZFoldDuo デバッグレポート</string>
+    <string name="sensor_too_coarse">この端末の公開ヒンジセンサーは0°・90°・180°しか報告しません。滑らかなアニメーションにはADB経由のSamsung内部ストリーム（フルモード）が必要です。「ヒンジストリーム」が「待機中」のままなら、デバッグレポートを収集して共有してください。</string>
 
     <string name="status_waiting">ワイヤレスデバッグを待っています…</string>
     <string name="status_connecting">%1$s:%2$d の adbd に接続中…</string>

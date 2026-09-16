@@ -20,6 +20,7 @@ import android.widget.EditText
 import android.widget.TextView
 import android.widget.Toast
 import com.foldduo.hinge.link.AngleSource
+import com.foldduo.hinge.link.DebugReport
 import com.foldduo.hinge.link.LinkStatus
 import com.foldduo.hinge.link.PairingNotifier
 import com.foldduo.hinge.overlay.HingeOverlayService
@@ -41,6 +42,8 @@ class MainActivity : Activity() {
     private lateinit var prerequisiteText: TextView
     private lateinit var streamAngleText: TextView
     private lateinit var streamCaptureText: TextView
+    private lateinit var coarseSensorText: View
+    private lateinit var debugReportButton: Button
     private lateinit var setupPanel: View
     private lateinit var localNetworkHint: View
     private lateinit var codeInput: EditText
@@ -72,6 +75,8 @@ class MainActivity : Activity() {
         prerequisiteText = findViewById(R.id.prerequisiteText)
         streamAngleText = findViewById(R.id.streamAngleText)
         streamCaptureText = findViewById(R.id.streamCaptureText)
+        coarseSensorText = findViewById(R.id.coarseSensorText)
+        debugReportButton = findViewById(R.id.debugReportButton)
         setupPanel = findViewById(R.id.setupPanel)
         localNetworkHint = findViewById(R.id.localNetworkHint)
         codeInput = findViewById(R.id.codeInput)
@@ -90,6 +95,7 @@ class MainActivity : Activity() {
         }
         findViewById<Button>(R.id.appInfoButton).setOnClickListener { open(SettingsLinks.appInfo(packageName)) }
         findViewById<Button>(R.id.copyDiagnosticsButton).setOnClickListener { copyDiagnostics() }
+        debugReportButton.setOnClickListener { collectDebugReport() }
         demoButton.setOnClickListener { HingeOverlayService.instance?.playDemo() }
         pairButton.setOnClickListener { pair() }
 
@@ -162,6 +168,8 @@ class MainActivity : Activity() {
         streamAngleText.text = getString(if (angleLive) R.string.stream_angle_live else R.string.stream_angle_down)
         streamCaptureText.text = getString(if (captureLive) R.string.stream_capture_live else R.string.stream_capture_down)
         modeText.text = getString(if (connected) R.string.mode_full else R.string.mode_basic)
+        coarseSensorText.visibility = if (!angleLive && AngleRuntime.publicSensorTooCoarse) View.VISIBLE else View.GONE
+        sensorText.text = getString(R.string.sensor_line, AngleRuntime.publicSensorDescription)
         if (AngleRuntime.sample.value == null) {
             sourceText.text = getString(R.string.angle_source_none)
         }
@@ -225,6 +233,28 @@ class MainActivity : Activity() {
         }
     }
 
+    private fun collectDebugReport() {
+        debugReportButton.isEnabled = false
+        Toast.makeText(this, R.string.debug_report_collecting, Toast.LENGTH_SHORT).show()
+        scope.launch {
+            val report = try {
+                DebugReport.collect(this@MainActivity)
+            } catch (error: Exception) {
+                "debug report failed: ${error.javaClass.simpleName}: ${error.message}"
+            }
+            debugReportButton.isEnabled = true
+            getSystemService(ClipboardManager::class.java)
+                ?.setPrimaryClip(ClipData.newPlainText("ZFoldDuo debug report", report))
+            Toast.makeText(this@MainActivity, R.string.debug_report_ready, Toast.LENGTH_LONG).show()
+            val share = Intent(Intent.ACTION_SEND).apply {
+                type = "text/plain"
+                putExtra(Intent.EXTRA_SUBJECT, getString(R.string.debug_report_share_title))
+                putExtra(Intent.EXTRA_TEXT, report)
+            }
+            runCatching { startActivity(Intent.createChooser(share, getString(R.string.debug_report_share_title))) }
+        }
+    }
+
     private fun copyDiagnostics() {
         val report = buildString {
             appendLine(deviceText.text)
@@ -234,6 +264,8 @@ class MainActivity : Activity() {
             appendLine(streamCaptureText.text)
             appendLine(modeText.text)
             appendLine(sensorText.text)
+            appendLine("Sensors:")
+            appendLine(AngleRuntime.describeSensors())
             appendLine(deviceStatesText.text)
             appendLine(overlayStatus.text)
             appendLine("Angle: ${angleText.text} (${sourceText.text})")

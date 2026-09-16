@@ -8,6 +8,7 @@ class ZFoldDuoApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         HiddenApiBypass.setHiddenApiExemptions(
+            "Landroid/app/IWallpaperManager",
             "Landroid/graphics/HardwareRenderer;",
             "Landroid/graphics/Shader;",
             "Landroid/view/SurfaceControl",
