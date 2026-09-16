@@ -10,7 +10,7 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
 
     steps:
       - name: Check out source
@@ -25,8 +25,31 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
+      # The hosted runner ships an SDK but does not put sdkmanager on PATH,
+      # which is why the original workflow failed with "command not found".
       - name: Install Android SDK platform
-        run: sdkmanager "platforms;android-37"
+        run: |
+          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          yes | "$SDKMANAGER" --licenses > /dev/null || true
+          "$SDKMANAGER" "platforms;android-37.0" "platform-tools"
 
-      - name: Test and build debug APK
-        run: ./gradlew --no-daemon testDebugUnitTest lintDebug assembleDebug
+      - name: Test, lint and build debug APK
+        run: ./gradlew --no-daemon --console=plain testDebugUnitTest lintDebug assembleDebug
+
+      - name: Upload debug APK
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: zfoldduo-debug-apk
+          path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+
+      - name: Upload test and lint reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reports
+          path: |
+            app/build/reports/
+            app/build/test-results/
+          if-no-files-found: ignore
