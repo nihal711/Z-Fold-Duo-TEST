@@ -5,6 +5,7 @@ import android.graphics.ColorSpace
 import android.hardware.HardwareBuffer
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import java.util.concurrent.atomic.AtomicInteger
 
 /** Zero-copy hand-off between the shell capture process and the overlay renderer. */
@@ -18,6 +19,7 @@ object LiveFrameHub {
     @Volatile
     private var listener: ((displayId: Int, bitmap: Bitmap, timestampNanos: Long) -> Unit)? = null
     private val timestamps = LongArray(MAX_DISPLAYS)
+    private val rejectedFormats = java.util.Collections.synchronizedSet(mutableSetOf<Int>())
 
     val sink = object : ILiveFrameSink.Stub() {
         override fun getRequestedDisplayMask(): Int = requestedMask.get()
@@ -27,8 +29,16 @@ object LiveFrameHub {
                 buffer.close()
                 return
             }
+            // A rejected buffer (unexpected pixel format, closed buffer, ...) must
+            // not propagate back over Binder: it would crash the shell-side bridge
+            // and drop live frames for every panel until it is restarted.
             val bitmap = try {
                 Bitmap.wrapHardwareBuffer(buffer, ColorSpace.get(ColorSpace.Named.SRGB))
+            } catch (error: RuntimeException) {
+                if (rejectedFormats.add(buffer.format)) {
+                    Log.w(TAG, "live frame rejected for display=$displayId format=${buffer.format}", error)
+                }
+                null
             } finally {
                 buffer.close()
             } ?: return
@@ -90,4 +100,5 @@ object LiveFrameHub {
     }
 
     private const val MAX_DISPLAYS = 8
+    private const val TAG = "ZFoldDuoEngine"
 }
