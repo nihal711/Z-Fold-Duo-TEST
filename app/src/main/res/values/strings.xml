@@ -32,6 +32,8 @@
     <string name="debug_report_collecting">Collecting report…</string>
     <string name="debug_report_ready">Report copied to clipboard; choose where to share it</string>
     <string name="debug_report_share_title">ZFoldDuo debug report</string>
+    <string name="fold_wallpaper_missing">Your current wallpaper (%1$s) has no fold-angle engine. The fine hinge angle only exists inside Samsung’s stock Folding wallpaper: open Wallpaper and style › Change wallpapers, pick one of the built-in Galaxy wallpapers that animates while you fold the phone (the default Z Fold wallpaper), and apply it to the Home screen. This line disappears once it is active.</string>
+    <string name="button_open_wallpaper">Open Wallpaper and style</string>
     <string name="sensor_too_coarse">This device only reports 0°, 90° and 180° from its public hinge sensor. Smooth animation needs the Samsung internal stream over ADB (full mode). If “Hinge stream” stays on “waiting”, collect a debug report and share it.</string>
 
     <!-- Link status -->

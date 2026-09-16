@@ -43,6 +43,8 @@ class MainActivity : Activity() {
     private lateinit var streamAngleText: TextView
     private lateinit var streamCaptureText: TextView
     private lateinit var coarseSensorText: View
+    private lateinit var wallpaperHintText: TextView
+    private lateinit var wallpaperButton: Button
     private lateinit var debugReportButton: Button
     private lateinit var setupPanel: View
     private lateinit var localNetworkHint: View
@@ -76,6 +78,9 @@ class MainActivity : Activity() {
         streamAngleText = findViewById(R.id.streamAngleText)
         streamCaptureText = findViewById(R.id.streamCaptureText)
         coarseSensorText = findViewById(R.id.coarseSensorText)
+        wallpaperHintText = findViewById(R.id.wallpaperHintText)
+        wallpaperButton = findViewById(R.id.wallpaperButton)
+        wallpaperButton.setOnClickListener { open(Intent(Intent.ACTION_SET_WALLPAPER)) }
         debugReportButton = findViewById(R.id.debugReportButton)
         setupPanel = findViewById(R.id.setupPanel)
         localNetworkHint = findViewById(R.id.localNetworkHint)
@@ -175,7 +180,16 @@ class MainActivity : Activity() {
             connectedStatus?.captureDetail?.takeUnless { captureLive },
         )
         modeText.text = getString(if (connected) R.string.mode_full else R.string.mode_basic)
-        coarseSensorText.visibility = if (!angleLive && AngleRuntime.publicSensorTooCoarse) View.VISIBLE else View.GONE
+        val wallpaperMissing = connectedStatus?.foldWallpaperMissing == true && !angleLive
+        wallpaperHintText.visibility = if (wallpaperMissing) View.VISIBLE else View.GONE
+        wallpaperButton.visibility = wallpaperHintText.visibility
+        if (wallpaperMissing) {
+            wallpaperHintText.text = getString(
+                R.string.fold_wallpaper_missing,
+                connectedStatus?.wallpaperComponent?.substringAfterLast('.') ?: "unknown",
+            )
+        }
+        coarseSensorText.visibility = if (!angleLive && !wallpaperMissing && AngleRuntime.publicSensorTooCoarse) View.VISIBLE else View.GONE
         sensorText.text = getString(R.string.sensor_line, AngleRuntime.publicSensorDescription)
         if (AngleRuntime.sample.value == null) {
             sourceText.text = getString(R.string.angle_source_none)

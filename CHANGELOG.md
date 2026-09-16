@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.1.3 (2026-09-16)
+
+Second Fold8 Ultra report: the wallpaper command is now accepted (transaction
+92) but the wallpaper process never logs an angle, because the phone runs
+Samsung's *Layered* wallpaper. The fine hinge angle only exists inside the
+engine of Samsung's stock **Folding** wallpaper
+(`com.samsung.android.wallpaper.live/….fold.FoldInteractive`, `video_002.mp4`),
+which reads the privileged sensor to scrub its video. Every project using this
+technique depends on that wallpaper being set; upstream never said so.
+
+- After connecting, the app checks whether the Folding wallpaper is active
+  (component in `dumpsys wallpaper`, or FoldInteractive lines in the wallpaper
+  process log) and otherwise shows what to do, with a button into Wallpaper
+  and style. The hint clears as soon as the fine angle starts flowing.
+- Live-capture bridge output is kept (last 24 lines) and its error line is
+  shown in the UI; the full tail goes into the debug report.
+- Debug report: logcat's `-t N` counts buffer lines before tag filtering, so
+  the app-log and FoldInteractive sections came back empty on a chatty
+  device. Sections now filter first and tail last, and list the wallpaper
+  services installed on the build.
+
 ## 0.1.2 (2026-09-16)
 
 The first debug report from the Fold8 Ultra (SM-F976B, One UI 9.0, build

@@ -25,6 +25,8 @@
     <string name="debug_report_collecting">レポートを収集中…</string>
     <string name="debug_report_ready">レポートをクリップボードにコピーしました。共有先を選んでください</string>
     <string name="debug_report_share_title">ZFoldDuo デバッグレポート</string>
+    <string name="fold_wallpaper_missing">現在の壁紙（%1$s）には折りたたみ角度エンジンがありません。細かいヒンジ角度はSamsung純正の「折りたたみ」壁紙（FoldInteractive）だけが提供します。「壁紙とスタイル › 壁紙を変更」で、折りたたみに合わせて動くGalaxy内蔵壁紙（初期設定のZ Fold壁紙）を選び、ホーム画面に適用してください。有効になるとこの表示は消えます。</string>
+    <string name="button_open_wallpaper">壁紙とスタイルを開く</string>
     <string name="sensor_too_coarse">この端末の公開ヒンジセンサーは0°・90°・180°しか報告しません。滑らかなアニメーションにはADB経由のSamsung内部ストリーム（フルモード）が必要です。「ヒンジストリーム」が「待機中」のままなら、デバッグレポートを収集して共有してください。</string>
 
     <string name="status_waiting">ワイヤレスデバッグを待っています…</string>

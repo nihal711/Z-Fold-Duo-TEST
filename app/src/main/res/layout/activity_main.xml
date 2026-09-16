@@ -99,6 +99,22 @@
             android:textSize="13sp" />
 
         <TextView
+            android:id="@+id/wallpaperHintText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:textColor="@color/accent"
+            android:textSize="13sp"
+            android:visibility="gone" />
+
+        <Button
+            android:id="@+id/wallpaperButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/button_open_wallpaper"
+            android:visibility="gone" />
+
+        <TextView
             android:id="@+id/coarseSensorText"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

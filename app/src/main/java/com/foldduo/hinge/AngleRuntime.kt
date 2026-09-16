@@ -13,6 +13,7 @@ import com.foldduo.hinge.link.AdbEndpoint
 import com.foldduo.hinge.link.AdbEndpointCandidates
 import com.foldduo.hinge.link.AngleSource
 import com.foldduo.hinge.link.DeviceStateCatalog
+import com.foldduo.hinge.link.FoldWallpaperCheck
 import com.foldduo.hinge.link.HingeAngleSensorSource
 import com.foldduo.hinge.link.LinkStatus
 import com.foldduo.hinge.link.PairingNotifier
@@ -235,6 +236,7 @@ object AngleRuntime {
             exemptFromBackgroundFreezing()
             selfTestWallpaperCommand()
             val output = client.shell("cmd device_state print-states").getOrNull().orEmpty()
+            scope.launch { checkFoldWallpaperEngine() }
             val catalog = DeviceStateCatalog.parse(output)
             _deviceStates.value = catalog
             if (catalog.isEmpty) {
@@ -278,6 +280,49 @@ object AngleRuntime {
         (_status.value as? LinkStatus.Connected)?.let { _status.value = it.copy(angleDetail = angleDetail) }
     }
 
+    /**
+     * Even a correctly addressed command yields no angle unless the running
+     * wallpaper engine is Samsung's FoldInteractive (the stock Folding
+     * wallpaper). Give the probe loop a moment, then look for the engine's
+     * log lines in the wallpaper process. Repeated a few times because the
+     * wallpaper process only logs while its surface is visible.
+     */
+    private suspend fun checkFoldWallpaperEngine() {
+        var component: String? = null
+        var seen = false
+        for (attempt in 0 until FOLD_WALLPAPER_CHECK_ATTEMPTS) {
+            delay(FOLD_WALLPAPER_CHECK_DELAY_MS)
+            if (!client.isConnected) return
+            if (privateAngleLive) {
+                seen = true
+                break
+            }
+            if (component == null) {
+                val dump = client.shell("dumpsys wallpaper 2>&1 | grep -E 'mWallpaperComponent' | head -n 6").getOrNull().orEmpty()
+                component = FoldWallpaperCheck.homeComponent(dump)
+                if (FoldWallpaperCheck.isFoldInteractive(dump)) {
+                    seen = true
+                    break
+                }
+            }
+            val count = client.shell(FoldWallpaperCheck.logCommand()).getOrNull().orEmpty()
+            if (FoldWallpaperCheck.engineSeen(count)) {
+                seen = true
+                break
+            }
+        }
+        val missing = !seen
+        Log.i(TAG, "fold wallpaper engine check: component=$component foldInteractiveSeen=$seen")
+        if (missing) angleDetail = FoldWallpaperCheck.describeMissing(component)
+        (_status.value as? LinkStatus.Connected)?.let {
+            _status.value = it.copy(
+                angleDetail = angleDetail,
+                foldWallpaperMissing = missing,
+                wallpaperComponent = component,
+            )
+        }
+    }
+
     private fun onClientEvent(event: EmbeddedAdbAngleClient.Event) {
         when (event) {
             is EmbeddedAdbAngleClient.Event.Connected -> {
@@ -294,6 +339,8 @@ object AngleRuntime {
                         captureLive = event.captureLive,
                         angleDetail = angleDetail,
                         captureDetail = event.captureDetail,
+                        captureLog = event.captureLog,
+                        foldWallpaperMissing = current.foldWallpaperMissing && !event.angleLive,
                     )
                 }
                 setPrivateAngleLive(event.angleLive)
@@ -521,6 +568,8 @@ object AngleRuntime {
     private const val MAX_BACKOFF_MS = 10_000L
     private const val RETRY_POLL_MS = 250L
     private const val PROPERTY_CACHE_S = 2L
+    private const val FOLD_WALLPAPER_CHECK_ATTEMPTS = 4
+    private const val FOLD_WALLPAPER_CHECK_DELAY_MS = 2_500L
 }
 
 /** Keeps the Kadb key-store wiring in one place so tests can avoid Android paths. */

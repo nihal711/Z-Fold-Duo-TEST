@@ -34,14 +34,21 @@ object DebugReport {
             appendLine("display control: ${AngleRuntime.displayControlAvailable}")
             appendLine("device states: ${AngleRuntime.deviceStates.value}")
             appendLine("wallpaper command: ${AngleRuntime.wallpaperCommand}")
+            (AngleRuntime.status.value as? LinkStatus.Connected)?.let { connected ->
+                appendLine("angle detail: ${connected.angleDetail}")
+                appendLine("capture detail: ${connected.captureDetail}")
+                appendLine("capture bridge output (recent):")
+                connected.captureLog.forEach { appendLine("  $it") }
+            }
             appendLine()
             val tx = AngleRuntime.wallpaperCommand.transaction
             if (!AngleRuntime.displayControlAvailable) {
                 appendLine("== Shell sections skipped: ADB link is down")
             } else {
                 // Most valuable first: the paste often gets cut off.
+                // logcat's -t counts buffer lines before tag filtering, so filter first and tail last.
                 shellSection("ZFoldDuo log (ZFoldDuoEngine, last 200 lines)",
-                    "logcat -d -v time -t 200 -s ZFoldDuoEngine:V 2>&1 | grep -vE 'live frames display|stream ended \\(exit\\); restart #[0-9]{2,}'")
+                    "logcat -d -v time -s ZFoldDuoEngine:V 2>&1 | grep -vE 'live frames display|stream ended \\(exit\\); restart #[0-9]{2,}' | tail -n 200")
                 shellSection("Probe command ($tx) reply",
                     "${WallpaperCommand.single(tx, "zfoldduo_report")} 2>&1")
                 shellSection("Wallpaper process log after the probe (any tag, last 80 lines)",
@@ -49,9 +56,13 @@ object DebugReport {
                         "echo \"wallpaper pid=\$PID\"; sleep 0.3; " +
                         "[ -n \"\$PID\" ] && logcat -d -v brief -t 80 --pid=\$PID 2>&1")
                 shellSection("FoldInteractive / mCurrentAngle lines (all tags, last 60)",
-                    "logcat -d -v brief -t 6000 2>/dev/null | grep -E 'FoldInteractive|mCurrentAngle|zfoldduo_' | grep -v adbd | tail -n 60")
+                    "logcat -d -v brief 2>/dev/null | grep -E 'FoldInteractive|mCurrentAngle|zfoldduo_' | grep -v adbd | tail -n 60")
                 shellSection("Crashes (AndroidRuntime, last 60 lines mentioning foldduo)",
-                    "logcat -d -v time -t 3000 -s AndroidRuntime:E 2>&1 | grep -iE -A 10 'foldduo|LiveCaptureBridge' | tail -n 60")
+                    "logcat -d -v time -s AndroidRuntime:E 2>&1 | grep -iE -A 10 'foldduo|LiveCaptureBridge' | tail -n 60")
+                shellSection("Wallpaper services installed (which engines exist on this build)",
+                    "dumpsys package com.samsung.android.wallpaper.live 2>&1 | grep -oE 'com.samsung.android.wallpaper.live/[A-Za-z0-9_.\$]+' | sort -u | head -n 40")
+                shellSection("Home/lock wallpaper details",
+                    "dumpsys wallpaper 2>&1 | grep -E 'mWhich|mWpType|mBindSource|mUri|mLastCallingPackage|Video|video|mWallpaperComponent' | head -n 30")
                 shellSection("Samsung build properties",
                     "getprop ro.build.version.oneui; getprop ro.build.version.sem; getprop ro.build.PDA; getprop ro.csc.sales_code")
                 shellSection("Wallpaper service (component, lid state)",

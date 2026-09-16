@@ -34,8 +34,14 @@ sealed class LinkStatus {
         val captureLive: Boolean,
         /** Human-readable note about the private angle stream (probe transaction, self-test result). */
         val angleDetail: String? = null,
-        /** Last line printed by the live-capture bridge; explains why capture is unavailable. */
+        /** The live-capture bridge's error line (or last line); explains why capture is unavailable. */
         val captureDetail: String? = null,
+        /** Recent bridge output, newest last, for the debug report. */
+        val captureLog: List<String> = emptyList(),
+        /** True when the active wallpaper has no FoldInteractive engine, so no fine angle can ever arrive. */
+        val foldWallpaperMissing: Boolean = false,
+        /** Home wallpaper component reported by the system, for diagnostics. */
+        val wallpaperComponent: String? = null,
     ) : LinkStatus()
 
     /** A connection attempt failed for a reason other than authentication; we retry. */

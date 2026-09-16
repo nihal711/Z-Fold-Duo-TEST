@@ -28,8 +28,16 @@ class EmbeddedAdbAngleClient(
     sealed class Event {
         data class Connected(val host: String, val port: Int) : Event()
 
-        /** Liveness of the two streams the UI cares about, with the last bridge output line. */
-        data class Streams(val angleLive: Boolean, val captureLive: Boolean, val captureDetail: String?) : Event()
+        /**
+         * Liveness of the two streams the UI cares about. [captureDetail] is the
+         * bridge's error line (or its last line); [captureLog] its recent output.
+         */
+        data class Streams(
+            val angleLive: Boolean,
+            val captureLive: Boolean,
+            val captureDetail: String?,
+            val captureLog: List<String>,
+        ) : Event()
 
         /** The session is gone. The owner decides when and where to reconnect. */
         data class Lost(val reason: String) : Event()
@@ -143,14 +151,14 @@ class EmbeddedAdbAngleClient(
             onOpen = { s.live = it },
             onLine = { line ->
                 Log.i(TAG, "capture: $line")
-                if (line.isNotBlank()) s.lastCaptureLine = line.trim()
+                s.recordCaptureLine(line)
                 if (line.contains(PrivateAngleStream.LIVE_READY_MARKER) && !s.captureLive) {
                     s.captureLive = true
                     publishStreams(s)
                 }
             },
             onExit = {
-                if (s.lastCaptureLine == null) s.lastCaptureLine = "bridge exited without output"
+                if (s.captureLog.isEmpty()) s.recordCaptureLine("bridge exited without output")
                 if (s.captureLive) s.captureLive = false
                 publishStreams(s)
             },
@@ -232,7 +240,7 @@ class EmbeddedAdbAngleClient(
     }
 
     private fun publishStreams(s: Session) {
-        if (s.alive.get()) onEvent(Event.Streams(s.angleLive, s.captureLive, s.lastCaptureLine))
+        if (s.alive.get()) onEvent(Event.Streams(s.angleLive, s.captureLive, s.captureDetail(), s.captureLog.toList()))
     }
 
     private fun lose(s: Session, reason: String) {
@@ -260,7 +268,25 @@ class EmbeddedAdbAngleClient(
         @Volatile var lastAngleAtMs: Long = SystemClock.uptimeMillis()
         @Volatile var angleLive = false
         @Volatile var captureLive = false
-        @Volatile var lastCaptureLine: String? = null
+        val captureLog = java.util.ArrayDeque<String>()
+
+        fun recordCaptureLine(line: String) {
+            val trimmed = line.trim()
+            if (trimmed.isEmpty()) return
+            synchronized(captureLog) {
+                // A new bridge start begins a fresh log so an old crash does not linger.
+                if (trimmed.startsWith("starting on")) captureLog.clear()
+                captureLog.addLast(trimmed)
+                while (captureLog.size > MAX_CAPTURE_LOG_LINES) captureLog.removeFirst()
+            }
+        }
+
+        /** The bridge's own error line when it printed one, otherwise its last line. */
+        fun captureDetail(): String? = synchronized(captureLog) {
+            captureLog.lastOrNull { it.contains(PrivateAngleStream.LIVE_ERROR_MARKER) }
+                ?.substringAfter("${PrivateAngleStream.LIVE_ERROR_MARKER}: ")
+                ?: captureLog.lastOrNull()
+        }
         @Volatile var everHadAngle = false
         @Volatile var absenceLogged = false
         @Volatile var stalls = 0
@@ -324,6 +350,7 @@ class EmbeddedAdbAngleClient(
         private const val ANGLE_STALL_MS = 3_000L
         private const val ANGLE_ABSENT_MS = 8_000L
         private const val MAX_ANGLE_STALLS = 3
+        private const val MAX_CAPTURE_LOG_LINES = 24
 
         private fun safeMessage(error: Throwable): String =
             error.message?.takeIf { it.isNotBlank() } ?: error.javaClass.simpleName
