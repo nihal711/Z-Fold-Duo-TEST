@@ -1,11 +1,14 @@
 # ZFoldDuo
 
-An experimental Android app that **recreates the iPhone Duo opening and closing animation on Galaxy Z Fold devices**. It follows the hinge angle of the Galaxy Z Fold7 and Fold8 and overlays an iPhone Duo-inspired 3D folding effect across the entire screen.
+An experimental Android app that **recreates the iPhone Duo opening and closing animation on Galaxy Z Fold devices**. It follows the hinge angle of the Galaxy Z Fold7, Fold8 and Fold8 Ultra and overlays an iPhone Duo-inspired 3D folding effect across the entire screen.
 
 **This is not a staged animation inside a demo app or a static-screenshot mockup.** ZFoldDuo runs as a system-wide overlay across Android and other apps, responds continuously to the physical hinge, and coordinates the real inner and cover displays. Live screen content remains part of the rendered transition.
 
+> [!NOTE]
+> This is a fork of [nnnnnnn0090/Z-Fold-Duo-TEST](https://github.com/nnnnnnn0090/Z-Fold-Duo-TEST) focused on making the app reliable on the Galaxy Z Fold8 Ultra. The upstream 0.0.1 proof of concept kept losing its on-device ADB link on that device ([upstream issue #1](https://github.com/nnnnnnn0090/Z-Fold-Duo-TEST/issues/1)); this fork rewrites the connection layer, adds a no-ADB basic mode, and turns the setup screen into an English checklist. See [CHANGELOG.md](CHANGELOG.md) for everything that changed.
+
 > [!IMPORTANT]
-> ZFoldDuo is a proof of concept exploring whether the iPhone Duo animation can be recreated on Galaxy Z Fold devices. It is not currently stable or ready for everyday use. More device testing and development are needed before it can become a reliable app. Bug reports, results from different OS builds, UI and architecture ideas, and code contributions are all welcome. Join the [Discord server](https://discord.gg/3ZgZKwJhKz) to participate and exchange information. See [CONTRIBUTING.md](CONTRIBUTING.md) for development guidelines.
+> ZFoldDuo relies on private Samsung interfaces and the Fold series' device-specific display architecture. It is still experimental: the fork's changes have been verified by unit tests and builds, not yet by a long soak on every One UI build. Bug reports with the **Copy diagnostics** output and `adb logcat -s ZFoldDuoEngine` are very welcome.
 
 ## Demo
 
@@ -14,42 +17,59 @@ An experimental Android app that **recreates the iPhone Duo opening and closing 
 ## Features
 
 - System-wide operation across the Android UI and other apps
-- Continuous animation driven by Samsung's internal hinge angle
+- Continuous animation driven by Samsung's internal hinge angle (or the public hinge sensor in basic mode)
 - Display transitions spanning the inner and cover screens
 - Live frames that reflect changes in the content behind the overlay
 - World-space projection based on a pinhole camera model
 - Automatic cleanup when the hinge angle remains nearly unchanged for one second
-- ADB connection that runs entirely on the device
+- ADB connection that runs entirely on the device, over loopback, with automatic recovery
+
+## Two modes
+
+| | Basic mode | Full mode |
+| --- | --- | --- |
+| Needs | Accessibility service only | Accessibility service + one-time Wireless debugging pairing |
+| Hinge angle | Public Android hinge sensor (about 1° steps) | Samsung's internal sensor, 40 Hz, three decimals |
+| Frames | Frozen screenshot per transition | Live frames while the panel is moving |
+| Both panels lit during a transition | No (Samsung switches panels itself) | Yes (concurrent display states) |
+
+The app starts in basic mode as soon as the overlay service is enabled and upgrades itself to full mode whenever the ADB link is up. If the link drops mid-session it falls back to basic mode instead of stopping.
 
 ## Supported environment
 
-- Galaxy Z Fold7
-- Galaxy Z Fold8
-- Android 16 or later
-- Wireless debugging
+- Galaxy Z Fold7, Fold8, Fold8 Ultra (SM-F976x / SM-F9760)
+- Android 16 or 17 (One UI 8.x / 9.x)
+- Wireless debugging (full mode)
 - Accessibility service
 
-The app may also work on the Galaxy Z Fold6 and earlier models, but these devices have not been tested.
-
-ZFoldDuo relies on private Samsung interfaces and the Fold series' device-specific display architecture. It may not work on every device or system version.
+The app may also work on the Galaxy Z Fold6 and earlier models, but these devices have not been tested. Chinese-market builds (CHC) are handled the same way as global ones; please report results.
 
 ## Setup
 
-1. Install the APK.
-2. Enable Wireless debugging in Developer options.
-3. Open **Pair device with pairing code**.
-4. Enter the six-digit code shown in ZFoldDuo.
-5. Enable the ZFoldDuo service in Android's Accessibility settings.
+1. Install the APK (from the [Releases](../../releases) page or the `zfoldduo-debug-apk` artifact of the latest [Actions](../../actions) run).
+2. Open ZFoldDuo and allow notifications and, on Android 17, local network access when asked.
+3. **Overlay service** – tap *Open Accessibility settings* and enable *ZFoldDuo fold animation*. If Android shows *Restricted setting*, tap *Open App info*, open the ⋮ menu, choose *Allow restricted settings*, then try again. Basic mode works from here on.
+4. **Full mode** – tap *Open Developer options*, enable Developer options and USB debugging if needed, then *Open Wireless debugging*, turn it on and choose **Pair device with pairing code**.
+5. Enter the six-digit code either in the notification ZFoldDuo posts (inline reply, no app switching needed) or in the app itself.
 
-The pairing key is stored in the app's private storage. A PC connection is not required during normal use.
+The pairing key is stored in the app's private storage. A PC is never required. Wireless debugging turns itself off after a reboot on most builds; turning it back on is enough, no re-pairing is needed.
+
+### If the link keeps dropping
+
+- Open the app and read the **1 · Wireless debugging link** section. It names the missing prerequisite (Developer options, USB debugging, Wireless debugging) and shows whether the hinge stream and live capture are alive.
+- Tap **Copy diagnostics** and include the text, together with `adb logcat -s ZFoldDuoEngine`, in a bug report. The capture bridge's own output is relayed into that log, so a failing screen-capture API on a new One UI build is visible there.
 
 ## How it works
 
-ZFoldDuo reads the internal hinge angle used by Samsung's system wallpaper component through an on-device ADB session. Its accessibility overlay is attached at the system level rather than to one app activity, so the effect follows whatever is currently visible on the device. During a display transition, it tracks Android's logical displays and the physical panels separately, temporarily keeping only the required displays powered at the same time.
+ZFoldDuo reads the internal hinge angle used by Samsung's system wallpaper component through an on-device ADB session. Its accessibility overlay is attached at the system level rather than to one app activity, so the effect follows whatever is currently visible on the device. During a display transition, it tracks Android's logical displays and the physical panels separately, temporarily keeping only the required displays powered at the same time. The identifiers of the concurrent-display device states are read from `cmd device_state print-states` at connection time so models that number them differently still work.
 
 The rendering engine treats each captured frame as a virtual glass surface. It calculates the projected position from the distance to the hinge, distance to the viewer, and rotation of the surface, then uses AGSL to apply depth-dependent frosting and dimming.
 
 Screen capture is used only as the live texture source for the system-wide effect; the animation is not a prerecorded or frozen screenshot trick. The frames are refreshed from the active display while the geometry continues to follow the physical hinge. The overlay itself does not receive touch input and is excluded from capture, preventing it from recursively appearing inside its own live frames.
+
+### The ADB link
+
+The link is made to `127.0.0.1` on the port Wireless debugging announces over mDNS. Loopback survives Wi-Fi address changes and Android 17's local-network permission, both of which killed connections made to the Wi-Fi address. The last working port is remembered and `service.adb.tls.port` is consulted so a flaky NsdManager does not block reconnection. Three shell streams run over the session (hinge probe, hinge log, live-capture bridge); each restarts on its own with backoff, and only an unreachable adbd tears the session down. A heartbeat watchdog restarts a stalled hinge stream.
 
 ## Privacy
 
@@ -57,6 +77,7 @@ Screen capture is used only as the live texture source for the system-wide effec
 - Frames are never saved to files.
 - Frames and hinge-angle data are never sent to external servers.
 - Network permission is used only for the on-device wireless debugging connection and mDNS discovery.
+- Notifications are used only for entering the pairing code.
 - Secure screens protected by Android cannot be captured.
 
 ## Building
@@ -64,7 +85,7 @@ Screen capture is used only as the live texture source for the system-wide effec
 Requirements:
 
 - JDK 17
-- Android SDK 37
+- Android SDK platform 37.0 (`sdkmanager "platforms;android-37.0"`)
 
 ```bash
 ./gradlew testDebugUnitTest lintDebug assembleDebug
@@ -82,9 +103,12 @@ Do not include release-signing configuration in the public repository.
 
 ```text
 app/src/main/java/com/foldduo/hinge/
-├── AngleRuntime.kt                 On-device ADB connection and display-state commands
-├── EmbeddedAdbAngleClient.kt      Internal hinge-angle stream
-├── capture/                       Live-frame transport over Binder
+├── AngleRuntime.kt                 Link supervisor, endpoint discovery, device-state commands
+├── EmbeddedAdbAngleClient.kt      ADB session with independently supervised shell streams
+├── MainActivity.kt                Setup checklist and diagnostics
+├── link/                          Link status model, endpoint candidates, device-state catalog,
+│                                  public hinge sensor fallback, notification pairing
+├── capture/                       Live-frame transport over Binder and the shell-side bridge
 ├── effect/                        Projection model, motion tracking, and frame smoothing
 └── overlay/                       Display state machine and GPU-rendered views
 
@@ -97,11 +121,11 @@ app/src/main/res/raw/
 - This is an unofficial project that imitates the iPhone Duo opening and closing effect. It is not provided, endorsed, or supported by Apple or Samsung.
 - Changes to private APIs may break the app without notice.
 - Accessibility permission is used to display a touch-through overlay across the entire screen.
-- If the app is force-stopped during a display transition, fold or unfold the device—or restart it—to restore the standard display state.
+- If the app is force-stopped during a display transition, fold or unfold the device—or restart it—to restore the standard display state. The app also resets the display state itself the next time its ADB link comes up while idle.
 
 ## Contributing
 
-Join the [Discord server](https://discord.gg/3ZgZKwJhKz) to share test results, ideas, and questions. For code contributions, read [CONTRIBUTING.md](CONTRIBUTING.md). Bug reports should include the device model, Android build number, reproduction steps, and relevant `ZFoldDuoEngine` logs. Do not attach personal information or screen content.
+Upstream discussion happens on the original project's [Discord server](https://discord.gg/3ZgZKwJhKz). For code contributions, read [CONTRIBUTING.md](CONTRIBUTING.md). Bug reports should include the device model, Android build number, reproduction steps, the app's **Copy diagnostics** output, and relevant `ZFoldDuoEngine` logs. Do not attach personal information or screen content.
 
 ## License
 
