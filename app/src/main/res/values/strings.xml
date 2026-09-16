@@ -1,6 +1,74 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">ZFoldDuo</string>
-    <string name="accessibility_name">ZFoldDuo 画面折りたたみ</string>
-    <string name="accessibility_description">実際のヒンジ角度に合わせ、画面全体へ曇りガラスの折りたたみアニメーションを表示します。画面はアニメーション中だけメモリへ取得し、保存や送信はしません。</string>
+    <string name="app_name" translatable="false">ZFoldDuo</string>
+    <string name="accessibility_name">ZFoldDuo fold animation</string>
+    <string name="accessibility_description">Draws a frosted-glass folding animation across the whole screen that follows the real hinge angle. The screen is captured into memory only while an animation is playing and is never saved or sent anywhere.</string>
+
+    <!-- Hinge readout -->
+    <string name="angle_placeholder" translatable="false">—°</string>
+    <string name="angle_format" translatable="false">%1$.3f°</string>
+    <string name="angle_source_private">Samsung internal hinge sensor via ADB</string>
+    <string name="angle_source_public">Android hinge sensor (basic mode)</string>
+    <string name="angle_source_none">No hinge angle yet</string>
+    <string name="rate_format" translatable="false">%1$.1f Hz</string>
+    <string name="rate_placeholder" translatable="false">— Hz</string>
+
+    <!-- Setup checklist -->
+    <string name="section_link">1 · Wireless debugging link</string>
+    <string name="section_overlay">2 · Overlay service</string>
+    <string name="section_diagnostics">Diagnostics</string>
+    <string name="link_help">Full mode needs a one-time pairing with Wireless debugging. Enable Developer options, turn on Wireless debugging, open “Pair device with pairing code”, then enter the 6-digit code here or from the notification ZFoldDuo posts.</string>
+    <string name="link_help_local_network">Android 17 asks for local-network access when the app first starts. It is only used to discover the wireless debugging port on this device.</string>
+    <string name="code_hint">6-digit code</string>
+    <string name="button_pair">Pair</string>
+    <string name="button_open_wireless_debugging">Open Wireless debugging</string>
+    <string name="button_open_developer_options">Open Developer options</string>
+    <string name="button_open_accessibility">Open Accessibility settings</string>
+    <string name="button_open_app_info">Open App info</string>
+    <string name="button_test">Test animation</string>
+    <string name="button_copy_diagnostics">Copy diagnostics</string>
+    <string name="diagnostics_copied">Diagnostics copied</string>
+
+    <!-- Link status -->
+    <string name="status_waiting">Waiting for Wireless debugging…</string>
+    <string name="status_connecting">Connecting to adbd at %1$s:%2$d…</string>
+    <string name="status_pairing_required">Pairing required. Open “Pair device with pairing code” in Wireless debugging.</string>
+    <string name="status_pairing">Pairing…</string>
+    <string name="status_paired">Paired. Connecting…</string>
+    <string name="status_pairing_failed">Pairing failed: %1$s</string>
+    <string name="status_connected">Connected via %1$s:%2$d</string>
+    <string name="status_retrying">Connection failed (%1$s). Retrying in %2$d s…</string>
+    <string name="status_disconnected">Link lost: %1$s. Reconnecting…</string>
+    <string name="status_developer_options_off">Developer options are off.</string>
+    <string name="status_adb_off">USB debugging is off. Wireless debugging needs it.</string>
+    <string name="status_wireless_debugging_off">Wireless debugging is off.</string>
+    <string name="status_pairing_endpoint">Pairing dialog detected on port %1$d. Enter the code below or in the notification.</string>
+
+    <string name="stream_angle_live">Hinge stream: live</string>
+    <string name="stream_angle_down">Hinge stream: waiting (using Android sensor)</string>
+    <string name="stream_capture_live">Live capture: active</string>
+    <string name="stream_capture_down">Live capture: unavailable (frozen snapshots)</string>
+
+    <!-- Overlay service -->
+    <string name="overlay_on">Overlay service is ON</string>
+    <string name="overlay_off">Overlay service is OFF</string>
+    <string name="overlay_help">Enable “ZFoldDuo fold animation” under Accessibility › Installed apps. Sideloaded apps may show “Restricted setting”: open App info, tap the ⋮ menu, choose “Allow restricted settings”, then try again.</string>
+
+    <!-- Diagnostics -->
+    <string name="device_line">%1$s %2$s · Android %3$s (SDK %4$d) · build %5$s</string>
+    <string name="device_states_line">Device states: %1$s</string>
+    <string name="device_states_unknown">Device states: not read yet (connect first)</string>
+    <string name="sensor_line">Public hinge sensor: %1$s</string>
+    <string name="mode_full">Mode: full (ADB display control available)</string>
+    <string name="mode_basic">Mode: basic (single panel, no ADB)</string>
+
+    <!-- Pairing notification -->
+    <string name="pairing_channel_name">Wireless debugging pairing</string>
+    <string name="pairing_channel_description">Lets you enter the pairing code without leaving the Settings dialog.</string>
+    <string name="pairing_notification_title">ZFoldDuo pairing</string>
+    <string name="pairing_notification_text">A pairing dialog is open (port %1$d). Enter the 6-digit code shown in Settings.</string>
+    <string name="pairing_notification_input_hint">6-digit pairing code</string>
+    <string name="pairing_notification_action">Enter code</string>
+    <string name="pairing_notification_success">Paired. ZFoldDuo is connecting.</string>
+    <string name="pairing_notification_failure">Pairing failed: %1$s</string>
 </resources>

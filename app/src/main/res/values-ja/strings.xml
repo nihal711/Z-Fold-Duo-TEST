@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="accessibility_name">ZFoldDuo 画面折りたたみ</string>
+    <string name="accessibility_description">実際のヒンジ角度に合わせ、画面全体へ曇りガラスの折りたたみアニメーションを表示します。画面はアニメーション中だけメモリへ取得し、保存や送信はしません。</string>
+
+    <string name="angle_source_private">Samsung内部ヒンジ計測中（ADB経由）</string>
+    <string name="angle_source_public">Androidヒンジセンサー（基本モード）</string>
+    <string name="angle_source_none">ヒンジ角度をまだ取得していません</string>
+
+    <string name="section_link">1 · ワイヤレスデバッグ接続</string>
+    <string name="section_overlay">2 · オーバーレイサービス</string>
+    <string name="section_diagnostics">診断情報</string>
+    <string name="link_help">フル機能には初回だけワイヤレスデバッグとのペアリングが必要です。開発者向けオプションを有効にし、ワイヤレスデバッグをオンにして「ペア設定コードによるデバイスのペア設定」を開き、6桁コードをここか通知から入力してください。</string>
+    <string name="link_help_local_network">Android 17では初回起動時にローカルネットワークへのアクセス許可を求めます。この端末のワイヤレスデバッグポートを見つけるためだけに使います。</string>
+    <string name="code_hint">6桁コード</string>
+    <string name="button_pair">ペアリング</string>
+    <string name="button_open_wireless_debugging">ワイヤレスデバッグを開く</string>
+    <string name="button_open_developer_options">開発者向けオプションを開く</string>
+    <string name="button_open_accessibility">ユーザー補助設定を開く</string>
+    <string name="button_open_app_info">アプリ情報を開く</string>
+    <string name="button_test">テスト</string>
+    <string name="button_copy_diagnostics">診断情報をコピー</string>
+    <string name="diagnostics_copied">診断情報をコピーしました</string>
+
+    <string name="status_waiting">ワイヤレスデバッグを待っています…</string>
+    <string name="status_connecting">%1$s:%2$d の adbd に接続中…</string>
+    <string name="status_pairing_required">ADBペアリングが必要です。ワイヤレスデバッグの「ペア設定コード」画面を開いてください。</string>
+    <string name="status_pairing">ペアリング中…</string>
+    <string name="status_paired">ペアリング完了・接続中…</string>
+    <string name="status_pairing_failed">ペアリング失敗: %1$s</string>
+    <string name="status_connected">%1$s:%2$d 経由で接続済み</string>
+    <string name="status_retrying">接続失敗（%1$s）。%2$d 秒後に再試行…</string>
+    <string name="status_disconnected">接続が切断されました: %1$s。再接続中…</string>
+    <string name="status_developer_options_off">開発者向けオプションがオフです。</string>
+    <string name="status_adb_off">USBデバッグがオフです。ワイヤレスデバッグに必要です。</string>
+    <string name="status_wireless_debugging_off">ワイヤレスデバッグがオフです。</string>
+    <string name="status_pairing_endpoint">ポート %1$d でペア設定画面を検出しました。下か通知にコードを入力してください。</string>
+
+    <string name="stream_angle_live">ヒンジストリーム: 稼働中</string>
+    <string name="stream_angle_down">ヒンジストリーム: 待機中（Androidセンサーを使用）</string>
+    <string name="stream_capture_live">ライブキャプチャ: 稼働中</string>
+    <string name="stream_capture_down">ライブキャプチャ: 利用不可（静止スナップショット）</string>
+
+    <string name="overlay_on">画面オーバーレイ ON</string>
+    <string name="overlay_off">画面オーバーレイ OFF</string>
+    <string name="overlay_help">ユーザー補助 › インストール済みアプリ で「ZFoldDuo 画面折りたたみ」を有効にしてください。サイドロードしたアプリでは「制限付き設定」と表示される場合があります。アプリ情報の ⋮ メニューから「制限付き設定を許可」を選んでから再試行してください。</string>
+
+    <string name="device_line">%1$s %2$s · Android %3$s（SDK %4$d）· ビルド %5$s</string>
+    <string name="device_states_line">デバイス状態: %1$s</string>
+    <string name="device_states_unknown">デバイス状態: 未取得（先に接続してください）</string>
+    <string name="sensor_line">公開ヒンジセンサー: %1$s</string>
+    <string name="mode_full">モード: フル（ADBによる画面制御あり）</string>
+    <string name="mode_basic">モード: 基本（単一画面・ADBなし）</string>
+
+    <string name="pairing_channel_name">ワイヤレスデバッグのペアリング</string>
+    <string name="pairing_channel_description">設定のダイアログを離れずにペア設定コードを入力できます。</string>
+    <string name="pairing_notification_title">ZFoldDuo ペアリング</string>
+    <string name="pairing_notification_text">ペア設定画面が開いています（ポート %1$d）。設定に表示された6桁コードを入力してください。</string>
+    <string name="pairing_notification_input_hint">6桁のペア設定コード</string>
+    <string name="pairing_notification_action">コードを入力</string>
+    <string name="pairing_notification_success">ペアリング完了。接続しています。</string>
+    <string name="pairing_notification_failure">ペアリング失敗: %1$s</string>
+</resources>

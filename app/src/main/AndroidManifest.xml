@@ -5,6 +5,7 @@
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE" />
     <uses-permission android:name="android.permission.ACCESS_LOCAL_NETWORK" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
         android:name=".ZFoldDuoApplication"
@@ -37,6 +38,10 @@
                 android:name="android.accessibilityservice"
                 android:resource="@xml/fold_accessibility" />
         </service>
+
+        <receiver
+            android:name=".link.PairingCodeReceiver"
+            android:exported="false" />
 
         <provider
             android:name=".capture.LiveFrameProvider"

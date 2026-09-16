@@ -31,6 +31,7 @@ import com.foldduo.hinge.effect.HingeTravelEstimator
 import com.foldduo.hinge.effect.EffectPreferences
 import com.foldduo.hinge.effect.FrameSmoother
 import com.foldduo.hinge.effect.isInnerPanel
+import com.foldduo.hinge.link.LinkStatus
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.cancel
@@ -148,12 +149,24 @@ class HingeOverlayService : AccessibilityService() {
         displayManager = getSystemService(DisplayManager::class.java)
         displayManager.registerDisplayListener(displayListener, handler)
         LiveFrameHub.setListener(::onLiveFrame)
-        // A process can be killed while Samsung's concurrent-display override
-        // is active. Always begin from the physical device state we actually see.
-        AngleRuntime.releasePreparedCoverDisplay()
         updateActiveDisplay(scheduleCapture = false)
         scope.launch {
             AngleRuntime.sample.collectLatest { sample -> sample?.let { onHinge(it.angle) } }
+        }
+        // A process can be killed, or the ADB link can drop, while Samsung's
+        // concurrent-display override or a shell wake lock is active. Whenever a
+        // link (re)appears and no transition is in flight, return the device to
+        // the physical state we actually see. Without ADB this is a no-op.
+        scope.launch {
+            var linkWasUp = false
+            AngleRuntime.status.collectLatest { status ->
+                val linkUp = status is LinkStatus.Connected
+                if (linkUp && !linkWasUp && isIdleForRecovery()) {
+                    Log.i(TAG, "link up while idle; resetting display state")
+                    AngleRuntime.recoverDisplayState()
+                }
+                linkWasUp = linkUp
+            }
         }
         Log.i(TAG, "connected; precise embedded ADB; display=$activeDisplayId inner=$innerPanel")
     }
@@ -182,6 +195,10 @@ class HingeOverlayService : AccessibilityService() {
     override fun onInterrupt() = Unit
 
     private fun currentTilt() = HingeProjection.tiltFor(lastAngle, EffectPreferences.config.value, innerPanel)
+
+    private fun isIdleForRecovery(): Boolean =
+        !dualDisplayActive && !dualPreparePending && !openingDualActive && !closingHandoffActive &&
+            heldInnerDisplayIds.isEmpty()
 
     private fun activeDisplay(): Display? {
         val builtIns = displayManager.getDisplays(DisplayManager.DISPLAY_CATEGORY_BUILT_IN_DISPLAYS)
@@ -397,7 +414,7 @@ class HingeOverlayService : AccessibilityService() {
         if (angle <= OPENING_INNER_ARM_HINGE) openingInnerArmed = true
         if (
             openingInnerArmed && !openingDualActive && !dualDisplayActive &&
-            !closingHandoffActive && !innerPanel &&
+            !closingHandoffActive && !innerPanel && AngleRuntime.displayControlAvailable &&
             previousAngle.isFinite() && angle >= OPENING_INNER_WAKE_HINGE && angle > previousAngle
         ) {
             openingInnerArmed = false
@@ -431,7 +448,7 @@ class HingeOverlayService : AccessibilityService() {
         }
         if (
             innerPanel && !openingDualActive && !dualDisplayActive && !closingHandoffActive &&
-            !dualPreparePending &&
+            !dualPreparePending && AngleRuntime.displayControlAvailable &&
             motion == HingeTravel.CLOSING &&
             angle in COVER_PREPARE_DONE_HINGE..COVER_PREPARE_HINGE &&
             displayManager.getDisplay(activeDisplayId)?.state == Display.STATE_ON
