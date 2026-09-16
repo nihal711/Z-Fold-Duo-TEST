@@ -28,8 +28,8 @@ class EmbeddedAdbAngleClient(
     sealed class Event {
         data class Connected(val host: String, val port: Int) : Event()
 
-        /** Liveness of the two streams the UI cares about. */
-        data class Streams(val angleLive: Boolean, val captureLive: Boolean) : Event()
+        /** Liveness of the two streams the UI cares about, with the last bridge output line. */
+        data class Streams(val angleLive: Boolean, val captureLive: Boolean, val captureDetail: String?) : Event()
 
         /** The session is gone. The owner decides when and where to reconnect. */
         data class Lost(val reason: String) : Event()
@@ -60,7 +60,7 @@ class EmbeddedAdbAngleClient(
      * Connects to adbd at [host]:[port]. Throws when the transport or the
      * authentication fails; the caller classifies the exception.
      */
-    fun connect(host: String, port: Int) {
+    fun connect(host: String, port: Int, wallpaperTransaction: Int) {
         close()
         val data = Kadb.create(host, port, connectTimeout = CONNECT_TIMEOUT_MS)
         val control = Kadb.create(host, port, connectTimeout = CONNECT_TIMEOUT_MS)
@@ -74,7 +74,7 @@ class EmbeddedAdbAngleClient(
             runCatching { control.close() }
             throw error
         }
-        val started = Session(host, port, data, control)
+        val started = Session(host, port, data, control, wallpaperTransaction)
         session = started
         Log.i(TAG, "ADB session established at $host:$port")
         onEvent(Event.Connected(host, port))
@@ -82,7 +82,7 @@ class EmbeddedAdbAngleClient(
         // FoldInteractive normally unsubscribes while the cover panel is active.
         // Its internal wake command re-enables the same private sensor without
         // changing either display's power or topology.
-        runCatching { control.shell(PrivateAngleStream.SENSOR_WAKE_COMMAND) }
+        runCatching { control.shell(PrivateAngleStream.sensorWakeCommand(wallpaperTransaction)) }
 
         started.start("probe") { runProbe(started) }
         started.start("angle") { runAngle(started) }
@@ -100,7 +100,7 @@ class EmbeddedAdbAngleClient(
         supervise(
             s,
             name = "probe",
-            command = PrivateAngleStream.PROBE_COMMAND,
+            command = PrivateAngleStream.probeCommand(s.wallpaperTransaction),
             backoff = Backoff(250L, 2_000L),
             onOpen = { s.probe = it },
             onLine = { /* the probe loop is silent; output only appears on errors */
@@ -118,7 +118,7 @@ class EmbeddedAdbAngleClient(
             onOpen = { s.angle = it },
             onLine = { line ->
                 if (PrivateAngleStream.isSensorStopped(line)) {
-                    shell(PrivateAngleStream.SENSOR_WAKE_COMMAND)
+                    shell(PrivateAngleStream.sensorWakeCommand(s.wallpaperTransaction))
                     return@supervise
                 }
                 val angle = PrivateAngleStream.parseAngle(line) ?: return@supervise
@@ -143,16 +143,16 @@ class EmbeddedAdbAngleClient(
             onOpen = { s.live = it },
             onLine = { line ->
                 Log.i(TAG, "capture: $line")
+                if (line.isNotBlank()) s.lastCaptureLine = line.trim()
                 if (line.contains(PrivateAngleStream.LIVE_READY_MARKER) && !s.captureLive) {
                     s.captureLive = true
                     publishStreams(s)
                 }
             },
             onExit = {
-                if (s.captureLive) {
-                    s.captureLive = false
-                    publishStreams(s)
-                }
+                if (s.lastCaptureLine == null) s.lastCaptureLine = "bridge exited without output"
+                if (s.captureLive) s.captureLive = false
+                publishStreams(s)
             },
         )
     }
@@ -177,7 +177,7 @@ class EmbeddedAdbAngleClient(
                     return
                 }
                 Log.w(TAG, "angle heartbeat silent for ${silentFor}ms; restarting probe and log streams (stall ${s.stalls})")
-                shell(PrivateAngleStream.SENSOR_WAKE_COMMAND)
+                shell(PrivateAngleStream.sensorWakeCommand(s.wallpaperTransaction))
                 runCatching { s.probe?.close() }
                 runCatching { s.angle?.close() }
             } else if (!s.angleLive && !s.everHadAngle && silentFor > ANGLE_ABSENT_MS && !s.absenceLogged) {
@@ -232,7 +232,7 @@ class EmbeddedAdbAngleClient(
     }
 
     private fun publishStreams(s: Session) {
-        if (s.alive.get()) onEvent(Event.Streams(s.angleLive, s.captureLive))
+        if (s.alive.get()) onEvent(Event.Streams(s.angleLive, s.captureLive, s.lastCaptureLine))
     }
 
     private fun lose(s: Session, reason: String) {
@@ -248,6 +248,7 @@ class EmbeddedAdbAngleClient(
         val port: Int,
         val data: Kadb,
         val control: Kadb,
+        val wallpaperTransaction: Int,
     ) {
         val alive = AtomicBoolean(true)
         val openLock = Any()
@@ -259,6 +260,7 @@ class EmbeddedAdbAngleClient(
         @Volatile var lastAngleAtMs: Long = SystemClock.uptimeMillis()
         @Volatile var angleLive = false
         @Volatile var captureLive = false
+        @Volatile var lastCaptureLine: String? = null
         @Volatile var everHadAngle = false
         @Volatile var absenceLogged = false
         @Volatile var stalls = 0

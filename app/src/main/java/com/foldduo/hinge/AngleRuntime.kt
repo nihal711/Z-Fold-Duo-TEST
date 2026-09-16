@@ -17,6 +17,7 @@ import com.foldduo.hinge.link.HingeAngleSensorSource
 import com.foldduo.hinge.link.LinkStatus
 import com.foldduo.hinge.link.PairingNotifier
 import com.foldduo.hinge.link.ShellWakeLocks
+import com.foldduo.hinge.link.WallpaperCommand
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -81,6 +82,14 @@ object AngleRuntime {
         if (initialized && client.isConnected) client.shell(command).getOrNull() else null
 
     private var initialized = false
+
+    /** Transaction number of semSendWallpaperCommand on this build, resolved once. */
+    lateinit var wallpaperCommand: WallpaperCommand.Resolution
+        private set
+
+    @Volatile
+    private var angleDetail: String? = null
+
     private lateinit var app: Context
     private lateinit var prefs: SharedPreferences
     private lateinit var mdns: KadbMdnsAndroid
@@ -99,6 +108,9 @@ object AngleRuntime {
         initialized = true
         app = context.applicationContext
         prefs = app.getSharedPreferences("adb_link", Context.MODE_PRIVATE)
+        wallpaperCommand = WallpaperCommand.resolve()
+        angleDetail = "probe transaction $wallpaperCommand"
+        Log.i(TAG, "wallpaper command transaction: $wallpaperCommand")
         KadbCertSetup.configure(app.filesDir)
         sensor = HingeAngleSensorSource(app) { angle, timestamp ->
             if (!privateAngleLive) _sample.value = AngleSample(angle, timestamp, AngleSource.PUBLIC_SENSOR)
@@ -170,7 +182,7 @@ object AngleRuntime {
                 for (candidate in candidates) {
                     _status.value = LinkStatus.Connecting(candidate.host, candidate.port)
                     try {
-                        client.connect(candidate.host, candidate.port)
+                        client.connect(candidate.host, candidate.port, wallpaperCommand.transaction)
                         connected = true
                         rememberPort(candidate.port)
                         Log.i(TAG, "connected via $candidate")
@@ -221,6 +233,7 @@ object AngleRuntime {
         PairingNotifier.dismissPrompt(app)
         scope.launch {
             exemptFromBackgroundFreezing()
+            selfTestWallpaperCommand()
             val output = client.shell("cmd device_state print-states").getOrNull().orEmpty()
             val catalog = DeviceStateCatalog.parse(output)
             _deviceStates.value = catalog
@@ -246,16 +259,42 @@ object AngleRuntime {
         Log.i(TAG, "background exemptions: deviceidle='${whitelist.trim().take(80)}' appops='${appops.trim().take(80)}'")
     }
 
+    /**
+     * Sends the probe command once and checks that the wallpaper service
+     * accepted it. A wrong transaction number answers with an unconsumed
+     * parcel, which is precisely what happened on the Fold8 Ultra before the
+     * number was read from the build's own Stub.
+     */
+    private fun selfTestWallpaperCommand() {
+        val reply = client.shell(WallpaperCommand.single(wallpaperCommand.transaction, "zfoldduo_selftest") + " 2>&1")
+            .getOrNull().orEmpty()
+        val ok = WallpaperCommand.isCleanReply(reply)
+        angleDetail = if (ok) {
+            "probe transaction $wallpaperCommand accepted"
+        } else {
+            "probe transaction $wallpaperCommand REJECTED: ${reply.lineSequence().firstOrNull()?.take(60) ?: "no reply"}"
+        }
+        Log.i(TAG, "wallpaper command self-test: $angleDetail")
+        (_status.value as? LinkStatus.Connected)?.let { _status.value = it.copy(angleDetail = angleDetail) }
+    }
+
     private fun onClientEvent(event: EmbeddedAdbAngleClient.Event) {
         when (event) {
             is EmbeddedAdbAngleClient.Event.Connected -> {
-                _status.value = LinkStatus.Connected(event.host, event.port, angleLive = false, captureLive = false)
+                _status.value = LinkStatus.Connected(
+                    event.host, event.port, angleLive = false, captureLive = false, angleDetail = angleDetail,
+                )
             }
 
             is EmbeddedAdbAngleClient.Event.Streams -> {
                 val current = _status.value as? LinkStatus.Connected
                 if (current != null) {
-                    _status.value = current.copy(angleLive = event.angleLive, captureLive = event.captureLive)
+                    _status.value = current.copy(
+                        angleLive = event.angleLive,
+                        captureLive = event.captureLive,
+                        angleDetail = angleDetail,
+                        captureDetail = event.captureDetail,
+                    )
                 }
                 setPrivateAngleLive(event.angleLive)
             }

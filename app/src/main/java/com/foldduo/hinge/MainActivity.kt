@@ -165,8 +165,15 @@ class MainActivity : Activity() {
         prerequisiteText.visibility = if (prerequisiteText.text.isNullOrEmpty()) View.GONE else View.VISIBLE
         val angleLive = (status as? LinkStatus.Connected)?.angleLive == true
         val captureLive = (status as? LinkStatus.Connected)?.captureLive == true
-        streamAngleText.text = getString(if (angleLive) R.string.stream_angle_live else R.string.stream_angle_down)
-        streamCaptureText.text = getString(if (captureLive) R.string.stream_capture_live else R.string.stream_capture_down)
+        val connectedStatus = status as? LinkStatus.Connected
+        streamAngleText.text = withDetail(
+            getString(if (angleLive) R.string.stream_angle_live else R.string.stream_angle_down),
+            connectedStatus?.angleDetail,
+        )
+        streamCaptureText.text = withDetail(
+            getString(if (captureLive) R.string.stream_capture_live else R.string.stream_capture_down),
+            connectedStatus?.captureDetail?.takeUnless { captureLive },
+        )
         modeText.text = getString(if (connected) R.string.mode_full else R.string.mode_basic)
         coarseSensorText.visibility = if (!angleLive && AngleRuntime.publicSensorTooCoarse) View.VISIBLE else View.GONE
         sensorText.text = getString(R.string.sensor_line, AngleRuntime.publicSensorDescription)
@@ -174,6 +181,9 @@ class MainActivity : Activity() {
             sourceText.text = getString(R.string.angle_source_none)
         }
     }
+
+    private fun withDetail(base: String, detail: String?): CharSequence =
+        if (detail.isNullOrBlank()) base else getString(R.string.stream_detail, base, detail)
 
     private fun describe(status: LinkStatus): CharSequence = when (status) {
         LinkStatus.WaitingForWirelessDebugging -> getString(R.string.status_waiting)

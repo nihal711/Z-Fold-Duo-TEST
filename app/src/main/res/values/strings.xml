@@ -53,6 +53,7 @@
     <string name="stream_angle_down">Hinge stream: waiting (using Android sensor)</string>
     <string name="stream_capture_live">Live capture: active</string>
     <string name="stream_capture_down">Live capture: unavailable (frozen snapshots)</string>
+    <string name="stream_detail">%1$s — %2$s</string>
 
     <!-- Overlay service -->
     <string name="overlay_on">Overlay service is ON</string>

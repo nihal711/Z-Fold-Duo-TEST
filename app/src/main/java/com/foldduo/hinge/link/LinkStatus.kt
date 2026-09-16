@@ -32,6 +32,10 @@ sealed class LinkStatus {
         val port: Int,
         val angleLive: Boolean,
         val captureLive: Boolean,
+        /** Human-readable note about the private angle stream (probe transaction, self-test result). */
+        val angleDetail: String? = null,
+        /** Last line printed by the live-capture bridge; explains why capture is unavailable. */
+        val captureDetail: String? = null,
     ) : LinkStatus()
 
     /** A connection attempt failed for a reason other than authentication; we retry. */

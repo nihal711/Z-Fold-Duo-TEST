@@ -6,7 +6,6 @@ import com.foldduo.hinge.AngleRuntime
 import com.foldduo.hinge.BuildConfig
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import java.lang.reflect.Modifier
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -34,33 +33,38 @@ object DebugReport {
             appendLine("angle source: ${AngleRuntime.sample.value?.source} angle=${AngleRuntime.sample.value?.angle}")
             appendLine("display control: ${AngleRuntime.displayControlAvailable}")
             appendLine("device states: ${AngleRuntime.deviceStates.value}")
+            appendLine("wallpaper command: ${AngleRuntime.wallpaperCommand}")
             appendLine()
+            val tx = AngleRuntime.wallpaperCommand.transaction
+            if (!AngleRuntime.displayControlAvailable) {
+                appendLine("== Shell sections skipped: ADB link is down")
+            } else {
+                // Most valuable first: the paste often gets cut off.
+                shellSection("ZFoldDuo log (ZFoldDuoEngine, last 200 lines)",
+                    "logcat -d -v time -t 200 -s ZFoldDuoEngine:V 2>&1 | grep -vE 'live frames display|stream ended \\(exit\\); restart #[0-9]{2,}'")
+                shellSection("Probe command ($tx) reply",
+                    "${WallpaperCommand.single(tx, "zfoldduo_report")} 2>&1")
+                shellSection("Wallpaper process log after the probe (any tag, last 80 lines)",
+                    "PID=\$(pidof com.samsung.android.wallpaper.live 2>/dev/null | cut -d' ' -f1); " +
+                        "echo \"wallpaper pid=\$PID\"; sleep 0.3; " +
+                        "[ -n \"\$PID\" ] && logcat -d -v brief -t 80 --pid=\$PID 2>&1")
+                shellSection("FoldInteractive / mCurrentAngle lines (all tags, last 60)",
+                    "logcat -d -v brief -t 6000 2>/dev/null | grep -E 'FoldInteractive|mCurrentAngle|zfoldduo_' | grep -v adbd | tail -n 60")
+                shellSection("Crashes (AndroidRuntime, last 60 lines mentioning foldduo)",
+                    "logcat -d -v time -t 3000 -s AndroidRuntime:E 2>&1 | grep -iE -A 10 'foldduo|LiveCaptureBridge' | tail -n 60")
+                shellSection("Samsung build properties",
+                    "getprop ro.build.version.oneui; getprop ro.build.version.sem; getprop ro.build.PDA; getprop ro.csc.sales_code")
+                shellSection("Wallpaper service (component, lid state)",
+                    "dumpsys wallpaper 2>&1 | grep -E 'mInfo.component|mWallpaperComponent|Lid state|mDefaultWallpaperComponent' | sort -u | head -n 12")
+                shellSection("Device state", "cmd device_state print-state 2>&1; cmd device_state print-states 2>&1")
+                shellSection("Displays", "dumpsys display 2>&1 | grep -oE 'DisplayViewport\\{[^}]*\\}' | head -n 6")
+            }
             appendLine("== Hinge sensors visible to the app (registered candidates)")
             appendLine(AngleRuntime.describeSensors())
             appendLine()
             appendLine("== IWallpaperManager transaction codes on this build")
-            appendLine(wallpaperTransactions())
+            appendLine(wallpaperTransactions(tx))
             appendLine()
-            if (!AngleRuntime.displayControlAvailable) {
-                appendLine("== Shell sections skipped: ADB link is down")
-            } else {
-                shellSection("Samsung build properties",
-                    "getprop ro.build.version.oneui; getprop ro.build.version.sem; getprop ro.build.PDA; getprop ro.csc.sales_code; getprop ro.build.version.security_patch")
-                shellSection("Wallpaper service (dumpsys wallpaper, head)", "dumpsys wallpaper 2>&1 | head -n 120")
-                shellSection("FoldInteractive / SprWallpaper log lines already in the buffer",
-                    "logcat -d -v brief -t 120 'SprWallpaper|FoldInteractive':I FoldInteractive:I SprWallpaper:I '*:S' 2>&1")
-                shellSection("Private angle command (${PrivateAngleStream.PROBE_TRANSACTION}) result",
-                    "service call wallpaper ${PrivateAngleStream.PROBE_TRANSACTION} i32 5 s16 ${PrivateAngleStream.ANGLE_ACTION} 2>&1; sleep 0.3; " +
-                        "logcat -d -v brief -t 40 'SprWallpaper|FoldInteractive':I FoldInteractive:I SprWallpaper:I '*:S' 2>&1")
-                shellSection("Any log line mentioning the probe action or mCurrentAngle (all tags, last 60)",
-                    "logcat -d -v brief -t 4000 2>/dev/null | grep -E 'zfoldduo_angle|mCurrentAngle|FoldInteractive' | tail -n 60")
-                shellSection("Sensor service: hinge-related sensors", "dumpsys sensorservice 2>&1 | grep -iE 'hinge|fold|angle' | head -n 60")
-                shellSection("Device state", "cmd device_state print-state 2>&1; cmd device_state print-states 2>&1")
-                shellSection("Displays", "dumpsys display 2>&1 | grep -E 'mDisplayId=|uniqueId=|state=|DisplayDeviceInfo|mBaseDisplayInfo' | head -n 60")
-                shellSection("ZFoldDuo log (ZFoldDuoEngine, last 400 lines)", "logcat -d -v time -t 400 -s ZFoldDuoEngine:V 2>&1")
-                shellSection("Crashes from the capture bridge or app (AndroidRuntime, last 80 lines)",
-                    "logcat -d -v time -t 2000 -s AndroidRuntime:E 2>&1 | grep -iE -A 12 'foldduo|LiveCaptureBridge' | tail -n 80")
-            }
         }
     }
 
@@ -89,22 +93,13 @@ object DebugReport {
      * TRANSACTION_* constants shows which method that is, and which code the
      * intended Samsung method has moved to.
      */
-    private fun wallpaperTransactions(): String = runCatching {
-        val stub = Class.forName("android.app.IWallpaperManager\$Stub")
-        val entries = stub.declaredFields
-            .filter { Modifier.isStatic(it.modifiers) && it.name.startsWith("TRANSACTION_") && it.type == Int::class.javaPrimitiveType }
-            .mapNotNull { field ->
-                runCatching {
-                    field.isAccessible = true
-                    field.getInt(null) to field.name.removePrefix("TRANSACTION_")
-                }.getOrNull()
-            }
-            .sortedBy { it.first }
+    private fun wallpaperTransactions(probeTransaction: Int): String = runCatching {
+        val entries = WallpaperCommand.transactionTable().entries.sortedBy { it.value }
         if (entries.isEmpty()) {
-            "no TRANSACTION_ fields readable (${stub.declaredFields.size} fields visible)"
+            "no TRANSACTION_ fields readable"
         } else {
-            entries.joinToString("\n") { (code, name) ->
-                val marker = if (code == PrivateAngleStream.PROBE_TRANSACTION) "   <== probe target" else ""
+            entries.joinToString("\n") { (name, code) ->
+                val marker = if (code == probeTransaction) "   <== probe target" else ""
                 "$code = $name$marker"
             }
         }

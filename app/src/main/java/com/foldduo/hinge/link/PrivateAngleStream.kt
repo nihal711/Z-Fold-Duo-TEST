@@ -10,23 +10,20 @@ package com.foldduo.hinge.link
 object PrivateAngleStream {
     const val ANGLE_ACTION = "zfoldduo_angle"
 
-    /**
-     * IWallpaperManager transaction that dispatches a command to the running
-     * wallpaper engine on One UI 8 / early One UI 9. Builds that renumber the
-     * interface are diagnosed with the in-app debug report.
-     */
-    const val PROBE_TRANSACTION = 90
+    const val WAKE_ACTION = "android.wallpaper.wakingup"
 
-    const val PROBE_COMMAND =
-        "while :; do service call wallpaper $PROBE_TRANSACTION i32 5 s16 $ANGLE_ACTION >/dev/null; sleep 0.025; done"
+    /** Transaction assumed by the original project; see [WallpaperCommand.resolve]. */
+    const val PROBE_TRANSACTION = WallpaperCommand.DEFAULT_TRANSACTION
+
+    /** Probe loop and sensor wake command for a given transaction number. */
+    fun probeCommand(transaction: Int): String = WallpaperCommand.probeLoop(transaction)
 
     /**
      * FoldInteractive normally unsubscribes from the sensor while the cover panel
      * is active. Its internal wake command re-registers it without touching
      * display power or topology.
      */
-    const val SENSOR_WAKE_COMMAND =
-        "service call wallpaper $PROBE_TRANSACTION i32 5 s16 android.wallpaper.wakingup >/dev/null"
+    fun sensorWakeCommand(transaction: Int): String = WallpaperCommand.wake(transaction)
 
     const val SENSOR_STOPPED_MARKER = "unregisterSensor: mIsSensorRegistered[true]"
 

@@ -22,8 +22,8 @@ android {
         applicationId 'com.foldduo.hinge'
         minSdk 33
         targetSdk 37
-        versionCode 71
-        versionName '0.1.1'
+        versionCode 72
+        versionName '0.1.2'
     }
 
     signingConfigs {

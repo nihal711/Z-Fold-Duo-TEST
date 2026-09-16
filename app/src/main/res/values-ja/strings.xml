@@ -45,6 +45,7 @@
     <string name="stream_angle_down">ヒンジストリーム: 待機中（Androidセンサーを使用）</string>
     <string name="stream_capture_live">ライブキャプチャ: 稼働中</string>
     <string name="stream_capture_down">ライブキャプチャ: 利用不可（静止スナップショット）</string>
+    <string name="stream_detail">%1$s — %2$s</string>
 
     <string name="overlay_on">画面オーバーレイ ON</string>
     <string name="overlay_off">画面オーバーレイ OFF</string>

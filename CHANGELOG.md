@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.1.2 (2026-09-16)
+
+The first debug report from the Fold8 Ultra (SM-F976B, One UI 9.0, build
+CP2A.260605.016.F976BXXS2AZH7) showed why the private hinge stream was silent:
+Samsung renumbered `IWallpaperManager`. The probe hard-coded transaction 90,
+which is `semSendWallpaperCommand` on One UI 8 but `getWallpaperBackgroundRegion`
+on this build, where the command method moved to 92. The wallpaper engine never
+received the command, so FoldInteractive never logged an angle.
+
+- The transaction number of `semSendWallpaperCommand` is now read from the
+  build's own `IWallpaperManager$Stub` at startup (falling back to 90), and a
+  self-test on every connect checks that the wallpaper service accepts the
+  probe. The result is shown next to "Hinge stream" in the app.
+- The last line printed by the live-capture bridge is shown next to "Live
+  capture" so a failing capture API is visible without logs.
+- Debug report reordered (app log first, wallpaper-process log via pid, less
+  dumpsys noise) so a truncated paste still carries the useful parts.
+
 ## 0.1.1 (2026-09-16)
 
 First feedback from a Galaxy Z Fold8 Ultra (SM-F976B, One UI 9 / Android 17,
