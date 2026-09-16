@@ -46,7 +46,7 @@ The app may also work on the Galaxy Z Fold6 and earlier models, but these device
 
 ## Setup
 
-1. Install the APK (from the [Releases](../../releases) page or the `zfoldduo-debug-apk` artifact of the latest [Actions](../../actions) run).
+1. Install `zfoldduo-<version>.apk` from the [Releases](../../releases) page. It is signed with this fork's key, so uninstall the upstream 0.0.1 build first if you have it.
 2. Open ZFoldDuo and allow notifications and, on Android 17, local network access when asked.
 3. **Overlay service** – tap *Open Accessibility settings* and enable *ZFoldDuo fold animation*. If Android shows *Restricted setting*, tap *Open App info*, open the ⋮ menu, choose *Allow restricted settings*, then try again. Basic mode works from here on.
 4. **Full mode** – tap *Open Developer options*, enable Developer options and USB debugging if needed, then *Open Wireless debugging*, turn it on and choose **Pair device with pairing code**.
@@ -97,7 +97,20 @@ Output:
 app/build/outputs/apk/debug/app-debug.apk
 ```
 
-Do not include release-signing configuration in the public repository.
+Release builds are signed from an untracked `keystore.properties` in the project root:
+
+```properties
+storeFile=zfoldduo-release.jks
+storePassword=...
+keyAlias=zfoldduo
+keyPassword=...
+```
+
+```bash
+./gradlew assembleRelease   # app/build/outputs/apk/release/app-release.apk
+```
+
+Never commit the keystore or its properties; `.gitignore` already excludes `*.jks` and `keystore.properties`. Published releases are built this way and uploaded to the fork's Releases page by hand; CI only runs tests and lint.
 
 ## Project structure
 

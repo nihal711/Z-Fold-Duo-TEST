@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.1.0 (fork, unreleased)
+## 0.1.0 (2026-09-16)
 
 Focus: make the app usable day to day on the Galaxy Z Fold8 Ultra, where the
 0.0.1 proof of concept kept dropping its on-device ADB link
@@ -55,7 +55,11 @@ Focus: make the app usable day to day on the Galaxy Z Fold8 Ultra, where the
 - Diagnostics section (device, Android build, device states, sensor, link and
   stream status) with one-tap copy for bug reports.
 
-### Build
+### Build and distribution
+- Release APKs are built locally, signed with the fork's own key (configured
+  through an untracked `keystore.properties`) and published on the GitHub
+  Releases page of the fork. Because that key differs from upstream's, the
+  upstream 0.0.1 build has to be uninstalled before installing 0.1.0.
 - CI: `sdkmanager` was not on PATH on the hosted runner and the SDK 37
-  platform is published as `platforms;android-37.0`; both fixed. The debug APK
-  is uploaded as a workflow artifact.
+  platform is published as `platforms;android-37.0`; both fixed. CI is a test
+  and lint gate only; it does not produce release builds.
